@@ -31,7 +31,7 @@ This golang package replaces the .env file. A single password can manage all sec
 - `ErrCannotDecryptSecret`: Cannot decrypt the secret.
 
 # LICENSE
-This package is licensed under the LGPL-3.0 license. For more information, see the LICENSE file.
+[LGPL-3.0] (LICENSE)
 
 # AUTHOR
 [tappoy](https://github.com/tappoy)
