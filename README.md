@@ -30,8 +30,8 @@ This golang package replaces the .env file. A single password can manage all sec
 - `ErrInvalidCiphertext`: The ciphertext is invalid.
 - `ErrCannotDecryptSecret`: Cannot decrypt the secret.
 
-# LICENSE
+# License
 [LGPL-3.0](LICENSE)
 
-# AUTHOR
+# Author
 [tappoy](https://github.com/tappoy)
