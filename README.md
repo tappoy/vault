@@ -5,12 +5,12 @@
 This golang package replaces the .env file. A single password can manage all secret variables.
 
 # Features
-- Encrypt/Decrypt variables and store them in `$TAPPOY_VAULT_DIR`. Default is `/srv/vault` for Linux and `C:\vault` for Windows.
+- Encrypt/Decrypt variables and store them in dir as binary files.
 - Variable names are hashed with password and used as file names.
 - If you forget the password, you can't access the variables.
 
 # Functions
-- `NewVault(password string) (*Vault, error)`: Create a new vault.
+- `NewVault(password string, vaultDir string) (*Vault, error)`: Create a new vault.
 - `(*Vault) Set(key string, value string) error`: Set a variable.
 - `(*Vault) Get(key string) (string, error)`: Get a variable.
 
