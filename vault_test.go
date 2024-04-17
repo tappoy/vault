@@ -7,7 +7,7 @@ import (
 )
 
 // TAPPY_VAULT_DIR for testing
-var defaultDir = "/tmp/vault"
+var testDir = "/tmp/vault"
 
 // test password
 var testPassword = "test1234"
@@ -19,16 +19,15 @@ func TestMain(m *testing.M) {
 
 // before test, set TAPPOY_VAULT_DIR to a temp directory then run given function finally remove the temp directory
 func withVault(t *testing.T, f func(t *testing.T)) {
-	os.Setenv("TAPPOY_VAULT_DIR", defaultDir)
 	f(t)
-	os.RemoveAll(defaultDir)
+	os.RemoveAll(testDir)
 }
 
 // test incorrect password all edge cases
 func TestVaultIncorrectPassword(t *testing.T) {
 	// test 32 length password
 	withVault(t, func(t *testing.T) {
-		_, err := NewVault("12345678901234567890123456789012")
+		_, err := NewVault("12345678901234567890123456789012", testDir)
 		if err != nil {
 			t.Error("Error password length 32")
 		}
@@ -36,7 +35,7 @@ func TestVaultIncorrectPassword(t *testing.T) {
 
 	// test 33 length password
 	withVault(t, func(t *testing.T) {
-		_, err := NewVault("123456789012345678901234567890123")
+		_, err := NewVault("123456789012345678901234567890123", testDir)
 		if err == nil {
 			t.Error("Error password length 33")
 		}
@@ -44,7 +43,7 @@ func TestVaultIncorrectPassword(t *testing.T) {
 
 	// test 8 length password
 	withVault(t, func(t *testing.T) {
-		_, err := NewVault("12345678")
+		_, err := NewVault("12345678", testDir)
 		if err != nil {
 			t.Error("Error password length 8")
 		}
@@ -52,7 +51,7 @@ func TestVaultIncorrectPassword(t *testing.T) {
 
 	// test 7 length password
 	withVault(t, func(t *testing.T) {
-		_, err := NewVault("1234567")
+		_, err := NewVault("1234567", testDir)
 		if err == nil {
 			t.Error("Error password length 7")
 		}
@@ -62,21 +61,18 @@ func TestVaultIncorrectPassword(t *testing.T) {
 
 // test vault default dir
 func TestVaultDefualtDir(t *testing.T) {
-	// set TAPPOY_VAULT_DIR to a temp directory
-	os.Setenv("TAPPOY_VAULT_DIR", defaultDir)
-
-	v, err := NewVault(testPassword)
+	v, err := NewVault(testPassword, testDir)
 	if err != nil {
 		t.Errorf("Error creating vault %v", err)
 		t.FailNow()
 	}
 
-	if v.vaultDir != defaultDir {
+	if v.vaultDir != testDir {
 		t.Error("Error creating vault")
 	}
 
 	// check if the password file exists
-	passwordFile := filepath.Join(defaultDir, ".password")
+	passwordFile := filepath.Join(testDir, ".password")
 	if _, err := os.Stat(passwordFile); os.IsNotExist(err) {
 		t.Errorf("Error creating password file %v", err)
 	}
@@ -104,7 +100,7 @@ func TestVaultDefualtDir(t *testing.T) {
 	}
 
 	// make vault with wrong password
-	_, err = NewVault("wrongpassword")
+	_, err = NewVault("wrongpassword", testDir)
 	if err == nil {
 		t.Errorf("Error creating vault with wrong password %v", err)
 	} else if err.Error() != "ErrInvalidPassword" {
@@ -112,5 +108,5 @@ func TestVaultDefualtDir(t *testing.T) {
 	}
 
 	// remove the temp directory
-	os.RemoveAll(defaultDir)
+	os.RemoveAll(testDir)
 }

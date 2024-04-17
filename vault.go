@@ -46,16 +46,10 @@ func (v *Vault) checkPassword() error {
 }
 
 // NewVault creates a new Vault
-func NewVault(password string) (*Vault, error) {
+func NewVault(password string, vaultDir string) (*Vault, error) {
 	// password must be 8 to 32 characters
 	if len(password) < 8 || len(password) > 32 {
 		return nil, errors.New("ErrInvalidPasswordLength")
-	}
-
-	// get the vault directory
-	vaultDir := os.Getenv("TAPPOY_VAULT_DIR")
-	if vaultDir == "" {
-		vaultDir = defaultVaultDir()
 	}
 
 	// create if vault directory does not exist
