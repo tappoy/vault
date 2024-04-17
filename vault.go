@@ -19,6 +19,25 @@ type Vault struct {
 	vaultDir string
 }
 
+// Errors
+var (
+  ErrInvalidPasswordLength = errors.New("ErrInvalidPasswordLength")
+  ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
+  ErrCannotCreatePasswordFile = errors.New("ErrCannotCreatePasswordFile")
+  ErrCannotAccessVaultDir = errors.New("ErrCannotAccessVaultDir")
+  ErrCannotReadPasswordFile = errors.New("ErrCannotReadPasswordFile")
+  ErrInvalidPassword = errors.New("ErrInvalidPassword")
+  ErrCannotCreateSecretFile = errors.New("ErrCannotCreateSecretFile")
+  ErrCannotCreateCipher = errors.New("ErrCannotCreateCipher")
+  ErrCannotCreateGcm = errors.New("ErrCannotCreateGcm")
+  ErrCannotGenerateNonce = errors.New("ErrCannotGenerateNonce")
+  ErrCannotWriteSecret = errors.New("ErrCannotWriteSecret")
+  ErrVariableNotFound = errors.New("ErrVariableNotFound")
+  ErrCannotReadSecretFile = errors.New("ErrCannotReadSecretFile")
+  ErrInvalidCiphertext = errors.New("ErrInvalidCiphertext")
+  ErrCannotDecryptSecret = errors.New("ErrCannotDecryptSecret")
+)
+
 // hash the given string
 func hash(s string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
@@ -35,11 +54,11 @@ func (v *Vault) checkPassword() error {
 	passwordFile := filepath.Join(v.vaultDir, ".password")
 	passwordHash, err := ioutil.ReadFile(passwordFile)
 	if err != nil {
-		return errors.New("ErrCannotReadPasswordFile")
+		return ErrCannotReadPasswordFile
 	}
 
 	if hash(v.password) != string(passwordHash) {
-		return errors.New("ErrInvalidPassword")
+		return ErrInvalidPassword
 	}
 
 	return nil
@@ -49,24 +68,28 @@ func (v *Vault) checkPassword() error {
 func NewVault(password string, vaultDir string) (*Vault, error) {
 	// password must be 8 to 32 characters
 	if len(password) < 8 || len(password) > 32 {
-		return nil, errors.New("ErrInvalidPasswordLength")
+		return nil, ErrInvalidPasswordLength
 	}
 
 	// create if vault directory does not exist
 	if _, err := os.Stat(vaultDir); os.IsNotExist(err) {
 		err := os.MkdirAll(vaultDir, 0755)
 		if err != nil {
-			return nil, errors.New("ErrCannotCreateVaultDir")
-		}
-		err = createPasswordFile(vaultDir, password)
-		if err != nil {
-			return nil, errors.New("ErrCannotCreatePasswordFile")
+			return nil, ErrCannotCreateVaultDir
 		}
 	}
 
+  // create if password file does not exist
+  if _, err := os.Stat(filepath.Join(vaultDir, ".password")); err != nil {
+    err := createPasswordFile(vaultDir, password)
+    if err != nil {
+      return nil, ErrCannotCreatePasswordFile
+    }
+  }
+
 	// check if vault directory is a readable and writable directory
 	if stat, err := os.Stat(vaultDir); err != nil || !stat.IsDir() || stat.Mode().Perm()&0600 != 0600 {
-		return nil, errors.New("ErrCannotAccessVaultDir")
+		return nil, ErrCannotAccessVaultDir
 	}
 
 	v := &Vault{password, vaultDir}
@@ -99,29 +122,29 @@ func (v *Vault) Set(key string, value string) error {
 	secretFile := filepath.Join(v.vaultDir, v.makeHashedKey(key))
 	f, err := os.Create(secretFile)
 	if err != nil {
-		return errors.New("ErrCannotCreateSecretFile")
+		return ErrCannotCreateSecretFile
 	}
 	defer f.Close()
 
 	block, err := aes.NewCipher([]byte(v.getPassword32()))
 	if err != nil {
-		return errors.New("ErrCannotCreateCipher" + err.Error())
+		return ErrCannotCreateCipher
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return errors.New("ErrCannotCreateGcm")
+		return ErrCannotCreateGcm
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return errors.New("ErrCannotGenerateNonce")
+		return ErrCannotGenerateNonce
 	}
 
 	ciphertext := gcm.Seal(nonce, nonce, []byte(value), nil)
 	_, err = f.Write(ciphertext)
 	if err != nil {
-		return errors.New("ErrCannotWriteSecret")
+		return ErrCannotWriteSecret
 	}
 
 	return nil
@@ -138,34 +161,34 @@ func (v *Vault) Get(key string) (string, error) {
 
 	// check if the secret file exists
 	if _, err := os.Stat(secretFile); os.IsNotExist(err) {
-		return "", errors.New("ErrVariableNotFound")
+		return "", ErrVariableNotFound
 	}
 
 	ciphertext, err := ioutil.ReadFile(secretFile)
 	if err != nil {
-		return "", errors.New("ErrCannotReadSecretFile")
+		return "", ErrCannotReadSecretFile
 	}
 
 	// decrypt the secret
 	block, err := aes.NewCipher([]byte(v.getPassword32()))
 	if err != nil {
-		return "", errors.New("ErrCannotCreateCipher")
+		return "", ErrCannotCreateCipher
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", errors.New("ErrCannotCreateGcm")
+		return "", ErrCannotCreateGcm
 	}
 
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return "", errors.New("ErrInvalidCiphertext")
+		return "", ErrInvalidCiphertext
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", errors.New("ErrCannotDecryptSecret")
+		return "", ErrCannotDecryptSecret
 	}
 
 	return string(plaintext), nil
