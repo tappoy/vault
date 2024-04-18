@@ -67,6 +67,12 @@ func TestVaultDefualtDir(t *testing.T) {
 		t.FailNow()
 	}
 
+	err = v.Init()
+	if err != nil {
+		t.Errorf("Error initializing vault %v", err)
+		t.FailNow()
+	}
+
 	if v.vaultDir != testDir {
 		t.Error("Error creating vault")
 	}
@@ -105,6 +111,47 @@ func TestVaultDefualtDir(t *testing.T) {
 		t.Errorf("Error creating vault with wrong password %v", err)
 	} else if err != ErrInvalidPassword {
 		t.Errorf("Error wrong error message %v", err)
+	}
+
+	// remove the temp directory
+	os.RemoveAll(testDir)
+}
+
+// test init vault
+func TestVaultInit(t *testing.T) {
+	v, err := NewVault(testPassword, testDir)
+	if err != nil {
+		t.Errorf("Error creating vault %v", err)
+		t.FailNow()
+	}
+
+	// check if already initialized
+	if v.IsInitialized() {
+		t.Errorf("Error already initialized")
+	}
+
+	// init vault
+	err = v.Init()
+	if err != nil {
+		t.Errorf("Error initializing vault %v", err)
+		t.FailNow()
+	}
+
+	// check if already initialized
+	if !v.IsInitialized() {
+		t.Errorf("Error not initialized")
+	}
+
+	// check if the password file exists
+	passwordFile := filepath.Join(testDir, ".password")
+	if _, err := os.Stat(passwordFile); os.IsNotExist(err) {
+		t.Errorf("Error creating password file %v", err)
+	}
+
+	// check if already initialized
+	err = v.Init()
+	if err != ErrAlreadyInitialized {
+		t.Errorf("Error already initialized %v", err)
 	}
 
 	// remove the temp directory

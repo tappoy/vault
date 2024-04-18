@@ -11,6 +11,8 @@ This golang package replaces the .env file. A single password can manage all sec
 
 # Functions
 - `NewVault(password string, vaultDir string) (*Vault, error)`: Create a new vault.
+- `(*Vault) Init() error`: Initialize the vault dir. If already initialized, return ErrAlreadyInitialized.
+- `(*Vault) IsInitialized() bool`: Check if the vault is initialized.
 - `(*Vault) Set(key string, value string) error`: Set a variable.
 - `(*Vault) Get(key string) (string, error)`: Get a variable.
 
@@ -29,6 +31,7 @@ This golang package replaces the .env file. A single password can manage all sec
 - `ErrCannotReadSecretFile`: Cannot read the secret file.
 - `ErrInvalidCiphertext`: The ciphertext is invalid.
 - `ErrCannotDecryptSecret`: Cannot decrypt the secret.
+- `ErrAlreadyInitialized`: The vault is already initialized.
 
 # License
 [LGPL-3.0](LICENSE)

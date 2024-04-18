@@ -21,21 +21,22 @@ type Vault struct {
 
 // Errors
 var (
-  ErrInvalidPasswordLength = errors.New("ErrInvalidPasswordLength")
-  ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
-  ErrCannotCreatePasswordFile = errors.New("ErrCannotCreatePasswordFile")
-  ErrCannotAccessVaultDir = errors.New("ErrCannotAccessVaultDir")
-  ErrCannotReadPasswordFile = errors.New("ErrCannotReadPasswordFile")
-  ErrInvalidPassword = errors.New("ErrInvalidPassword")
-  ErrCannotCreateSecretFile = errors.New("ErrCannotCreateSecretFile")
-  ErrCannotCreateCipher = errors.New("ErrCannotCreateCipher")
-  ErrCannotCreateGcm = errors.New("ErrCannotCreateGcm")
-  ErrCannotGenerateNonce = errors.New("ErrCannotGenerateNonce")
-  ErrCannotWriteSecret = errors.New("ErrCannotWriteSecret")
-  ErrVariableNotFound = errors.New("ErrVariableNotFound")
-  ErrCannotReadSecretFile = errors.New("ErrCannotReadSecretFile")
-  ErrInvalidCiphertext = errors.New("ErrInvalidCiphertext")
-  ErrCannotDecryptSecret = errors.New("ErrCannotDecryptSecret")
+	ErrInvalidPasswordLength    = errors.New("ErrInvalidPasswordLength")
+	ErrCannotCreateVaultDir     = errors.New("ErrCannotCreateVaultDir")
+	ErrCannotCreatePasswordFile = errors.New("ErrCannotCreatePasswordFile")
+	ErrCannotAccessVaultDir     = errors.New("ErrCannotAccessVaultDir")
+	ErrCannotReadPasswordFile   = errors.New("ErrCannotReadPasswordFile")
+	ErrInvalidPassword          = errors.New("ErrInvalidPassword")
+	ErrCannotCreateSecretFile   = errors.New("ErrCannotCreateSecretFile")
+	ErrCannotCreateCipher       = errors.New("ErrCannotCreateCipher")
+	ErrCannotCreateGcm          = errors.New("ErrCannotCreateGcm")
+	ErrCannotGenerateNonce      = errors.New("ErrCannotGenerateNonce")
+	ErrCannotWriteSecret        = errors.New("ErrCannotWriteSecret")
+	ErrVariableNotFound         = errors.New("ErrVariableNotFound")
+	ErrCannotReadSecretFile     = errors.New("ErrCannotReadSecretFile")
+	ErrInvalidCiphertext        = errors.New("ErrInvalidCiphertext")
+	ErrCannotDecryptSecret      = errors.New("ErrCannotDecryptSecret")
+	ErrAlreadyInitialized       = errors.New("ErrAlreadyInitialized")
 )
 
 // hash the given string
@@ -71,35 +72,55 @@ func NewVault(password string, vaultDir string) (*Vault, error) {
 		return nil, ErrInvalidPasswordLength
 	}
 
-	// create if vault directory does not exist
-	if _, err := os.Stat(vaultDir); os.IsNotExist(err) {
-		err := os.MkdirAll(vaultDir, 0755)
-		if err != nil {
-			return nil, ErrCannotCreateVaultDir
+	v := &Vault{password, vaultDir}
+
+	// check if vault is already initialized
+	if v.IsInitialized() {
+		// check if password is correct
+		if err := v.checkPassword(); err != nil {
+			return nil, err
 		}
 	}
 
-  // create if password file does not exist
-  if _, err := os.Stat(filepath.Join(vaultDir, ".password")); err != nil {
-    err := createPasswordFile(vaultDir, password)
-    if err != nil {
-      return nil, ErrCannotCreatePasswordFile
-    }
-  }
+	return v, nil
+}
+
+// check if vault is already initialized
+func (v *Vault) IsInitialized() bool {
+	if _, err := os.Stat(filepath.Join(v.vaultDir, ".password")); err == nil {
+		return true
+	}
+
+	return false
+}
+
+// init vault
+func (v *Vault) Init() error {
+	// check if vault is already initialized
+	if v.IsInitialized() {
+		return ErrAlreadyInitialized
+	}
+
+	// create if vault directory does not exist
+	if _, err := os.Stat(v.vaultDir); os.IsNotExist(err) {
+		err := os.MkdirAll(v.vaultDir, 0755)
+		if err != nil {
+			return ErrCannotCreateVaultDir
+		}
+	}
 
 	// check if vault directory is a readable and writable directory
-	if stat, err := os.Stat(vaultDir); err != nil || !stat.IsDir() || stat.Mode().Perm()&0600 != 0600 {
-		return nil, ErrCannotAccessVaultDir
+	if stat, err := os.Stat(v.vaultDir); err != nil || !stat.IsDir() || stat.Mode().Perm()&0600 != 0600 {
+		return ErrCannotAccessVaultDir
 	}
 
-	v := &Vault{password, vaultDir}
-
-	// check if password is correct
-	if err := v.checkPassword(); err != nil {
-		return nil, err
+	// create password file
+	err := createPasswordFile(v.vaultDir, v.password)
+	if err != nil {
+		return ErrCannotCreatePasswordFile
 	}
 
-	return v, nil
+	return nil
 }
 
 // make hashed key
