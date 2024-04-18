@@ -75,7 +75,7 @@ func NewVault(password string, vaultDir string) (*Vault, error) {
 	v := &Vault{password, vaultDir}
 
 	// check if vault is already initialized
-	if v.IsInitialized() {
+	if IsInitialized(v.vaultDir) {
 		// check if password is correct
 		if err := v.checkPassword(); err != nil {
 			return nil, err
@@ -86,8 +86,8 @@ func NewVault(password string, vaultDir string) (*Vault, error) {
 }
 
 // check if vault is already initialized
-func (v *Vault) IsInitialized() bool {
-	if _, err := os.Stat(filepath.Join(v.vaultDir, ".password")); err == nil {
+func IsInitialized(vaultDir string) bool {
+	if _, err := os.Stat(filepath.Join(vaultDir, ".password")); err == nil {
 		return true
 	}
 
@@ -97,7 +97,7 @@ func (v *Vault) IsInitialized() bool {
 // init vault
 func (v *Vault) Init() error {
 	// check if vault is already initialized
-	if v.IsInitialized() {
+	if IsInitialized(v.vaultDir) {
 		return ErrAlreadyInitialized
 	}
 

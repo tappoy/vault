@@ -126,7 +126,7 @@ func TestVaultInit(t *testing.T) {
 	}
 
 	// check if already initialized
-	if v.IsInitialized() {
+	if IsInitialized(testDir) {
 		t.Errorf("Error already initialized")
 	}
 
@@ -138,7 +138,7 @@ func TestVaultInit(t *testing.T) {
 	}
 
 	// check if already initialized
-	if !v.IsInitialized() {
+	if !IsInitialized(testDir) {
 		t.Errorf("Error not initialized")
 	}
 
