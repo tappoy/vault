@@ -119,6 +119,11 @@ func TestVaultDefualtDir(t *testing.T) {
 
 // test init vault
 func TestVaultInit(t *testing.T) {
+	// check if already initialized
+	if IsInitialized(testDir) {
+		t.Errorf("Error already initialized")
+	}
+
 	v, err := NewVault(testPassword, testDir)
 	if err != nil {
 		t.Errorf("Error creating vault %v", err)
@@ -126,7 +131,7 @@ func TestVaultInit(t *testing.T) {
 	}
 
 	// check if already initialized
-	if IsInitialized(testDir) {
+	if v.IsInitialized() {
 		t.Errorf("Error already initialized")
 	}
 
@@ -138,7 +143,7 @@ func TestVaultInit(t *testing.T) {
 	}
 
 	// check if already initialized
-	if !IsInitialized(testDir) {
+	if !v.IsInitialized() {
 		t.Errorf("Error not initialized")
 	}
 

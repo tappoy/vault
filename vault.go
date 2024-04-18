@@ -75,7 +75,7 @@ func NewVault(password string, vaultDir string) (*Vault, error) {
 	v := &Vault{password, vaultDir}
 
 	// check if vault is already initialized
-	if IsInitialized(v.vaultDir) {
+	if v.IsInitialized() {
 		// check if password is correct
 		if err := v.checkPassword(); err != nil {
 			return nil, err
@@ -92,6 +92,11 @@ func IsInitialized(vaultDir string) bool {
 	}
 
 	return false
+}
+
+// check if vault is already initialized
+func (v *Vault) IsInitialized() bool {
+  return IsInitialized(v.vaultDir)
 }
 
 // init vault
