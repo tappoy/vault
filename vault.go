@@ -81,7 +81,7 @@ func (v *Vault) checkPassword() error {
 	return nil
 }
 
-// Creates a new Vault.
+// Create a new Vault.
 // The password length is invalid. It must be 8 to 32 characters.
 //
 //	Errors:
@@ -159,7 +159,7 @@ func (v *Vault) makeHashedKey(key string) string {
 	return crypto.Hash(key + v.password)
 }
 
-// Set stores the secret value in the vault.
+// Store the secret value in the vault.
 //
 //	Errors:
 //	- ErrCannotCreateSecretFile
@@ -186,7 +186,7 @@ func (v *Vault) Set(key string, value string) error {
 	return nil
 }
 
-// Get retrieves the secret value from the vault.
+// Retrieve the secret value from the vault.
 //
 //	Errors:
 //	- ErrVariableNotFound
