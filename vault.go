@@ -27,6 +27,9 @@ type Vault struct {
 
 var (
 	// Cannot create the vault directory.
+	ErrInvalidPasswordLength = crypto.ErrInvalidPasswordLength
+
+	// Cannot create the vault directory.
 	ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
 
 	// Cannot create the password file.
@@ -85,11 +88,11 @@ func (v *Vault) checkPassword() error {
 // The password length is invalid. It must be 8 to 32 characters.
 //
 //	Errors:
-//	- crypto.ErrInvalidPasswordLength
+//	- ErrInvalidPasswordLength
 func NewVault(password string, vaultDir string) (*Vault, error) {
 	crypto, err := crypto.NewCrypto(password)
 	if err != nil {
-		return nil, err
+		return nil, ErrInvalidPasswordLength
 	}
 
 	v := &Vault{password, crypto, vaultDir}

@@ -15,6 +15,9 @@ VARIABLES
 
 var (
 	// Cannot create the vault directory.
+	ErrInvalidPasswordLength = crypto.ErrInvalidPasswordLength
+
+	// Cannot create the vault directory.
 	ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
 
 	// Cannot create the password file.
@@ -66,7 +69,7 @@ func NewVault(password string, vaultDir string) (*Vault, error)
     characters.
 
         Errors:
-        - crypto.ErrInvalidPasswordLength
+        - ErrInvalidPasswordLength
 
 func (v *Vault) Get(key string) (string, error)
     Retrieve the secret value from the vault.
