@@ -62,14 +62,14 @@ type Vault struct {
     Vault struct
 
 func NewVault(password string, vaultDir string) (*Vault, error)
-    Creates a new Vault. The password length is invalid. It must be 8 to 32
+    Create a new Vault. The password length is invalid. It must be 8 to 32
     characters.
 
         Errors:
         - crypto.ErrInvalidPasswordLength
 
 func (v *Vault) Get(key string) (string, error)
-    Get retrieves the secret value from the vault.
+    Retrieve the secret value from the vault.
 
         Errors:
         - ErrVariableNotFound
@@ -89,7 +89,7 @@ func (v *Vault) IsInitialized() bool
     Check if vault is already initialized.
 
 func (v *Vault) Set(key string, value string) error
-    Set stores the secret value in the vault.
+    Store the secret value in the vault.
 
         Errors:
         - ErrCannotCreateSecretFile
