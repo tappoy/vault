@@ -109,7 +109,7 @@ func TestVaultDefualtDir(t *testing.T) {
 	_, err = NewVault("wrongpassword", testDir)
 	if err == nil {
 		t.Errorf("Error creating vault with wrong password %v", err)
-	} else if err != ErrInvalidPassword {
+	} else if err != ErrPasswordIncorrect {
 		t.Errorf("Error wrong error message %v", err)
 	}
 

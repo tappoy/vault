@@ -1,0 +1,97 @@
+package vault // import "github.com/tappoy/vault"
+
+This golang package replaces the .env file. A single password can manage all
+secret variables.
+
+    Features:
+      - Encrypt/Decrypt variables and store them in dir as binary files.
+      - Variable names are hashed with password and used as file names.
+      - If you forget the password, you can't access the variables.
+
+    Dependencies:
+      - github.com/tappoy/crypto
+
+VARIABLES
+
+var (
+	// Cannot create the vault directory.
+	ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
+
+	// Cannot create the password file.
+	ErrCannotCreatePasswordFile = errors.New("ErrCannotCreatePasswordFile")
+
+	// Cannot access the vault directory.
+	ErrCannotAccessVaultDir = errors.New("ErrCannotAccessVaultDir")
+
+	// Cannot read the password file.
+	ErrCannotReadPasswordFile = errors.New("ErrCannotReadPasswordFile")
+
+	// Password incorrect.
+	ErrPasswordIncorrect = errors.New("ErrPasswordIncorrect")
+
+	// Cannot create the secret file.
+	ErrCannotCreateSecretFile = errors.New("ErrCannotCreateSecretFile")
+
+	// Cannot write the secret.
+	ErrCannotWriteSecret = errors.New("ErrCannotWriteSecret")
+
+	// Variable not found.
+	ErrVariableNotFound = errors.New("ErrVariableNotFound")
+
+	// Cannot read the secret file.
+	ErrCannotReadSecretFile = errors.New("ErrCannotReadSecretFile")
+
+	// Vault is already initialized.
+	ErrAlreadyInitialized = errors.New("ErrAlreadyInitialized")
+
+	// Cannot decrypt the secret.
+	ErrDecryptSecret = errors.New("ErrDecryptSecret")
+)
+
+FUNCTIONS
+
+func IsInitialized(vaultDir string) bool
+    Check if vault is already initialized.
+
+
+TYPES
+
+type Vault struct {
+	// Has unexported fields.
+}
+    Vault struct
+
+func NewVault(password string, vaultDir string) (*Vault, error)
+    Creates a new Vault. The password length is invalid. It must be 8 to 32
+    characters.
+
+        Errors:
+        - crypto.ErrInvalidPasswordLength
+
+func (v *Vault) Get(key string) (string, error)
+    Get retrieves the secret value from the vault.
+
+        Errors:
+        - ErrVariableNotFound
+        - crypto.ErrInvalidCiphertext
+        - crypto.ErrCannotDecryptSecret
+
+func (v *Vault) Init() error
+    Init vault.
+
+        Errors:
+        - ErrAlreadyInitialized
+        - ErrCannotCreateVaultDir
+        - ErrCannotAccessVaultDir
+        - ErrCannotCreatePasswordFile
+
+func (v *Vault) IsInitialized() bool
+    Check if vault is already initialized.
+
+func (v *Vault) Set(key string, value string) error
+    Set stores the secret value in the vault.
+
+        Errors:
+        - ErrCannotCreateSecretFile
+        - ErrCannotWriteSecret
+
