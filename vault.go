@@ -1,13 +1,18 @@
+// This golang package replaces the .env file.
+// A single password can manage all secret variables.
+//
+//	Features:
+//	  - Encrypt/Decrypt variables and store them in dir as binary files.
+//	  - Variable names are hashed with password and used as file names.
+//	  - If you forget the password, you can't access the variables.
+//
+//	Dependencies:
+//	  - github.com/tappoy/crypto
 package vault
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"errors"
-	"fmt"
-	"io"
+	"github.com/tappoy/crypto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,41 +21,52 @@ import (
 // Vault struct
 type Vault struct {
 	password string
+	crypto   *crypto.Crypto
 	vaultDir string
 }
 
-// Errors
 var (
-	ErrInvalidPasswordLength    = errors.New("ErrInvalidPasswordLength")
-	ErrCannotCreateVaultDir     = errors.New("ErrCannotCreateVaultDir")
+	// Cannot create the vault directory.
+	ErrCannotCreateVaultDir = errors.New("ErrCannotCreateVaultDir")
+
+	// Cannot create the password file.
 	ErrCannotCreatePasswordFile = errors.New("ErrCannotCreatePasswordFile")
-	ErrCannotAccessVaultDir     = errors.New("ErrCannotAccessVaultDir")
-	ErrCannotReadPasswordFile   = errors.New("ErrCannotReadPasswordFile")
-	ErrInvalidPassword          = errors.New("ErrInvalidPassword")
-	ErrCannotCreateSecretFile   = errors.New("ErrCannotCreateSecretFile")
-	ErrCannotCreateCipher       = errors.New("ErrCannotCreateCipher")
-	ErrCannotCreateGcm          = errors.New("ErrCannotCreateGcm")
-	ErrCannotGenerateNonce      = errors.New("ErrCannotGenerateNonce")
-	ErrCannotWriteSecret        = errors.New("ErrCannotWriteSecret")
-	ErrVariableNotFound         = errors.New("ErrVariableNotFound")
-	ErrCannotReadSecretFile     = errors.New("ErrCannotReadSecretFile")
-	ErrInvalidCiphertext        = errors.New("ErrInvalidCiphertext")
-	ErrCannotDecryptSecret      = errors.New("ErrCannotDecryptSecret")
-	ErrAlreadyInitialized       = errors.New("ErrAlreadyInitialized")
+
+	// Cannot access the vault directory.
+	ErrCannotAccessVaultDir = errors.New("ErrCannotAccessVaultDir")
+
+	// Cannot read the password file.
+	ErrCannotReadPasswordFile = errors.New("ErrCannotReadPasswordFile")
+
+	// Password incorrect.
+	ErrPasswordIncorrect = errors.New("ErrPasswordIncorrect")
+
+	// Cannot create the secret file.
+	ErrCannotCreateSecretFile = errors.New("ErrCannotCreateSecretFile")
+
+	// Cannot write the secret.
+	ErrCannotWriteSecret = errors.New("ErrCannotWriteSecret")
+
+	// Variable not found.
+	ErrVariableNotFound = errors.New("ErrVariableNotFound")
+
+	// Cannot read the secret file.
+	ErrCannotReadSecretFile = errors.New("ErrCannotReadSecretFile")
+
+	// Vault is already initialized.
+	ErrAlreadyInitialized = errors.New("ErrAlreadyInitialized")
+
+	// Cannot decrypt the secret.
+	ErrDecryptSecret = errors.New("ErrDecryptSecret")
 )
 
-// hash the given string
-func hash(s string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(s)))
-}
-
-// create password file
+// Create password file.
 func createPasswordFile(vaultDir string, password string) error {
 	passwordFile := filepath.Join(vaultDir, ".password")
-	return ioutil.WriteFile(passwordFile, []byte(hash(password)), 0400)
+	return ioutil.WriteFile(passwordFile, []byte(crypto.Hash(password)), 0400)
 }
 
-// check password
+// Check password.
 func (v *Vault) checkPassword() error {
 	passwordFile := filepath.Join(v.vaultDir, ".password")
 	passwordHash, err := ioutil.ReadFile(passwordFile)
@@ -58,21 +74,25 @@ func (v *Vault) checkPassword() error {
 		return ErrCannotReadPasswordFile
 	}
 
-	if hash(v.password) != string(passwordHash) {
-		return ErrInvalidPassword
+	if crypto.Hash(v.password) != string(passwordHash) {
+		return ErrPasswordIncorrect
 	}
 
 	return nil
 }
 
-// NewVault creates a new Vault
+// Creates a new Vault.
+// The password length is invalid. It must be 8 to 32 characters.
+//
+//	Errors:
+//	- crypto.ErrInvalidPasswordLength
 func NewVault(password string, vaultDir string) (*Vault, error) {
-	// password must be 8 to 32 characters
-	if len(password) < 8 || len(password) > 32 {
-		return nil, ErrInvalidPasswordLength
+	crypto, err := crypto.NewCrypto(password)
+	if err != nil {
+		return nil, err
 	}
 
-	v := &Vault{password, vaultDir}
+	v := &Vault{password, crypto, vaultDir}
 
 	// check if vault is already initialized
 	if v.IsInitialized() {
@@ -85,7 +105,7 @@ func NewVault(password string, vaultDir string) (*Vault, error) {
 	return v, nil
 }
 
-// check if vault is already initialized
+// Check if vault is already initialized.
 func IsInitialized(vaultDir string) bool {
 	if _, err := os.Stat(filepath.Join(vaultDir, ".password")); err == nil {
 		return true
@@ -94,12 +114,18 @@ func IsInitialized(vaultDir string) bool {
 	return false
 }
 
-// check if vault is already initialized
+// Check if vault is already initialized.
 func (v *Vault) IsInitialized() bool {
-  return IsInitialized(v.vaultDir)
+	return IsInitialized(v.vaultDir)
 }
 
-// init vault
+// Init vault.
+//
+//	Errors:
+//	- ErrAlreadyInitialized
+//	- ErrCannotCreateVaultDir
+//	- ErrCannotAccessVaultDir
+//	- ErrCannotCreatePasswordFile
 func (v *Vault) Init() error {
 	// check if vault is already initialized
 	if IsInitialized(v.vaultDir) {
@@ -128,17 +154,16 @@ func (v *Vault) Init() error {
 	return nil
 }
 
-// make hashed key
+// Make hashed key
 func (v *Vault) makeHashedKey(key string) string {
-	return hash(key + v.password)
+	return crypto.Hash(key + v.password)
 }
 
-// get password filled with spaces to 32 characters
-func (v *Vault) getPassword32() string {
-	return fmt.Sprintf("%-32s", v.password)
-}
-
-// Set stores the secret value in the vault
+// Set stores the secret value in the vault.
+//
+//	Errors:
+//	- ErrCannotCreateSecretFile
+//	- ErrCannotWriteSecret
 func (v *Vault) Set(key string, value string) error {
 	if err := v.checkPassword(); err != nil {
 		return err
@@ -152,22 +177,7 @@ func (v *Vault) Set(key string, value string) error {
 	}
 	defer f.Close()
 
-	block, err := aes.NewCipher([]byte(v.getPassword32()))
-	if err != nil {
-		return ErrCannotCreateCipher
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return ErrCannotCreateGcm
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return ErrCannotGenerateNonce
-	}
-
-	ciphertext := gcm.Seal(nonce, nonce, []byte(value), nil)
+	ciphertext := v.crypto.Encrypt([]byte(value))
 	_, err = f.Write(ciphertext)
 	if err != nil {
 		return ErrCannotWriteSecret
@@ -176,7 +186,12 @@ func (v *Vault) Set(key string, value string) error {
 	return nil
 }
 
-// Get retrieves the secret value from the vault
+// Get retrieves the secret value from the vault.
+//
+//	Errors:
+//	- ErrVariableNotFound
+//	- crypto.ErrInvalidCiphertext
+//	- crypto.ErrCannotDecryptSecret
 func (v *Vault) Get(key string) (string, error) {
 	if err := v.checkPassword(); err != nil {
 		return "", err
@@ -195,26 +210,9 @@ func (v *Vault) Get(key string) (string, error) {
 		return "", ErrCannotReadSecretFile
 	}
 
-	// decrypt the secret
-	block, err := aes.NewCipher([]byte(v.getPassword32()))
+	plaintext, err := v.crypto.Decrypt(ciphertext)
 	if err != nil {
-		return "", ErrCannotCreateCipher
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", ErrCannotCreateGcm
-	}
-
-	nonceSize := gcm.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return "", ErrInvalidCiphertext
-	}
-
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", ErrCannotDecryptSecret
+		return "", err
 	}
 
 	return string(plaintext), nil
