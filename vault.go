@@ -66,7 +66,7 @@ var (
 // Create password file.
 func createPasswordFile(vaultDir string, password string) error {
 	passwordFile := filepath.Join(vaultDir, ".password")
-	return ioutil.WriteFile(passwordFile, []byte(crypto.Hash(password)), 0400)
+	return ioutil.WriteFile(passwordFile, []byte(crypto.Hash(password)), 0440)
 }
 
 // Check password.
@@ -137,14 +137,14 @@ func (v *Vault) Init() error {
 
 	// create if vault directory does not exist
 	if _, err := os.Stat(v.vaultDir); os.IsNotExist(err) {
-		err := os.MkdirAll(v.vaultDir, 0755)
+		err := os.MkdirAll(v.vaultDir, 0750)
 		if err != nil {
 			return ErrCannotCreateVaultDir
 		}
 	}
 
 	// check if vault directory is a readable and writable directory
-	if stat, err := os.Stat(v.vaultDir); err != nil || !stat.IsDir() || stat.Mode().Perm()&0600 != 0600 {
+	if stat, err := os.Stat(v.vaultDir); err != nil || !stat.IsDir() || stat.Mode().Perm()&0750 != 0750 {
 		return ErrCannotAccessVaultDir
 	}
 
