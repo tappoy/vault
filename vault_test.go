@@ -7,7 +7,7 @@ import (
 )
 
 // TAPPY_VAULT_DIR for testing
-var testDir = "/tmp/vault"
+var testDir = "tmp/vault_test"
 
 // test password
 var testPassword = "test1234"
@@ -119,6 +119,9 @@ func TestVaultDefualtDir(t *testing.T) {
 
 // test init vault
 func TestVaultInit(t *testing.T) {
+	// remove the temp directory
+	os.RemoveAll(testDir)
+
 	// check if already initialized
 	if IsInitialized(testDir) {
 		t.Errorf("Error already initialized")
@@ -159,6 +162,20 @@ func TestVaultInit(t *testing.T) {
 		t.Errorf("Error already initialized %v", err)
 	}
 
-	// remove the temp directory
-	os.RemoveAll(testDir)
+	// set value
+	err = v.Set("key", "value")
+	if err != nil {
+		t.Errorf("Error setting value %v", err)
+	}
+
+	// get value
+	value, err := v.Get("key")
+	if err != nil {
+		t.Errorf("Error getting value %v", err)
+	}
+
+	if value != "value" {
+		t.Errorf("Error getting value changed %v", value)
+	}
+
 }
