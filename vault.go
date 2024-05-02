@@ -174,14 +174,9 @@ func (v *Vault) Set(key string, value string) error {
 
 	// create a new file for the secret
 	secretFile := filepath.Join(v.vaultDir, v.makeHashedKey(key))
-	f, err := os.Create(secretFile)
-	if err != nil {
-		return ErrCannotCreateSecretFile
-	}
-	defer f.Close()
 
 	ciphertext := v.crypto.Encrypt([]byte(value))
-	_, err = f.Write(ciphertext)
+	err := ioutil.WriteFile(secretFile, ciphertext, 0640)
 	if err != nil {
 		return ErrCannotWriteSecret
 	}
