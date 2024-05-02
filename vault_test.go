@@ -19,8 +19,8 @@ func TestMain(m *testing.M) {
 
 // before test, set TAPPOY_VAULT_DIR to a temp directory then run given function finally remove the temp directory
 func withVault(t *testing.T, f func(t *testing.T)) {
-	f(t)
 	os.RemoveAll(testDir)
+	f(t)
 }
 
 // test incorrect password all edge cases
@@ -29,7 +29,7 @@ func TestVaultIncorrectPassword(t *testing.T) {
 	withVault(t, func(t *testing.T) {
 		_, err := NewVault("12345678901234567890123456789012", testDir)
 		if err != nil {
-			t.Error("Error password length 32")
+			t.Errorf("Error password length 32 %v", err)
 		}
 	})
 
@@ -176,6 +176,59 @@ func TestVaultInit(t *testing.T) {
 
 	if value != "value" {
 		t.Errorf("Error getting value changed %v", value)
+	}
+
+}
+
+func TestVaultDeleteValue(t *testing.T) {
+	// remove the temp directory
+	os.RemoveAll(testDir)
+
+	v, err := NewVault(testPassword, testDir)
+	if err != nil {
+		t.Errorf("Error creating vault %v", err)
+		t.FailNow()
+	}
+
+	// init vault
+	err = v.Init()
+	if err != nil {
+		t.Errorf("Error initializing vault %v", err)
+		t.FailNow()
+	}
+
+	// set value
+	err = v.Set("key", "value")
+	if err != nil {
+		t.Errorf("Error setting value %v", err)
+	}
+
+	// get value
+	value, err := v.Get("key")
+	if err != nil {
+		t.Errorf("Error getting value %v", err)
+	}
+
+	if value != "value" {
+		t.Errorf("Error getting value changed %v", value)
+	}
+
+	// delete value
+	err = v.Delete("key")
+	if err != nil {
+		t.Errorf("Error deleting value %v", err)
+	}
+
+	// get value
+	_, err = v.Get("key")
+	if err != ErrKeyNotFound {
+		t.Errorf("Error key not found %v", err)
+	}
+
+	// delete value
+	err = v.Delete("key")
+	if err != ErrKeyNotFound {
+		t.Errorf("Error key not found %v", err)
 	}
 
 }

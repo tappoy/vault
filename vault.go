@@ -1,13 +1,13 @@
 // This golang package replaces the .env file.
 // A single password can manage all secret variables.
 //
-//	Features:
-//	  - Encrypt/Decrypt variables and store them in dir as binary files.
-//	  - Variable names are hashed with password and used as file names.
-//	  - If you forget the password, you can't access the variables.
+// Features:
+//   - Encrypt/Decrypt variables and store them in dir as binary files.
+//   - Variable names are hashed with password and used as file names.
+//   - If you forget the password, you can't access the variables.
 //
-//	Dependencies:
-//	  - github.com/tappoy/crypto
+// Dependencies:
+//   - github.com/tappoy/crypto
 package vault
 
 import (
@@ -50,11 +50,14 @@ var (
 	// Cannot write the secret.
 	ErrCannotWriteSecret = errors.New("ErrCannotWriteSecret")
 
-	// Variable not found.
-	ErrVariableNotFound = errors.New("ErrVariableNotFound")
+	// Key not found.
+	ErrKeyNotFound = errors.New("ErrKeyNotFound ")
 
 	// Cannot read the secret file.
 	ErrCannotReadSecretFile = errors.New("ErrCannotReadSecretFile")
+
+	// Cannot delete the secret file.
+	ErrCannotDeleteSecretFile = errors.New("ErrCannotDeleteSecretFile")
 
 	// Vault is already initialized.
 	ErrAlreadyInitialized = errors.New("ErrAlreadyInitialized")
@@ -87,8 +90,8 @@ func (v *Vault) checkPassword() error {
 // Create a new Vault.
 // The password length is invalid. It must be 8 to 32 characters.
 //
-//	Errors:
-//	- ErrInvalidPasswordLength
+// Errors:
+//   - ErrInvalidPasswordLength
 func NewVault(password string, vaultDir string) (*Vault, error) {
 	crypto, err := crypto.NewCrypto(password)
 	if err != nil {
@@ -124,11 +127,11 @@ func (v *Vault) IsInitialized() bool {
 
 // Init vault.
 //
-//	Errors:
-//	- ErrAlreadyInitialized
-//	- ErrCannotCreateVaultDir
-//	- ErrCannotAccessVaultDir
-//	- ErrCannotCreatePasswordFile
+// Errors:
+//   - ErrAlreadyInitialized
+//   - ErrCannotCreateVaultDir
+//   - ErrCannotAccessVaultDir
+//   - ErrCannotCreatePasswordFile
 func (v *Vault) Init() error {
 	// check if vault is already initialized
 	if IsInitialized(v.vaultDir) {
@@ -164,9 +167,9 @@ func (v *Vault) makeHashedKey(key string) string {
 
 // Store the secret value in the vault.
 //
-//	Errors:
-//	- ErrCannotCreateSecretFile
-//	- ErrCannotWriteSecret
+// Errors:
+//   - ErrCannotCreateSecretFile
+//   - ErrCannotWriteSecret
 func (v *Vault) Set(key string, value string) error {
 	if err := v.checkPassword(); err != nil {
 		return err
@@ -186,10 +189,10 @@ func (v *Vault) Set(key string, value string) error {
 
 // Retrieve the secret value from the vault.
 //
-//	Errors:
-//	- ErrVariableNotFound
-//	- crypto.ErrInvalidCiphertext
-//	- crypto.ErrCannotDecryptSecret
+// Errors:
+//   - ErrKeyNotFound
+//   - crypto.ErrInvalidCiphertext
+//   - crypto.ErrCannotDecryptSecret
 func (v *Vault) Get(key string) (string, error) {
 	if err := v.checkPassword(); err != nil {
 		return "", err
@@ -200,7 +203,7 @@ func (v *Vault) Get(key string) (string, error) {
 
 	// check if the secret file exists
 	if _, err := os.Stat(secretFile); os.IsNotExist(err) {
-		return "", ErrVariableNotFound
+		return "", ErrKeyNotFound
 	}
 
 	ciphertext, err := ioutil.ReadFile(secretFile)
@@ -214,4 +217,31 @@ func (v *Vault) Get(key string) (string, error) {
 	}
 
 	return string(plaintext), nil
+}
+
+// Delete the secret value from the vault.
+//
+// Errors:
+//   - ErrKeyNotFound
+//   - ErrCannotDeleteSecretFile
+func (v *Vault) Delete(key string) error {
+	if err := v.checkPassword(); err != nil {
+		return err
+	}
+
+	// open the secret file
+	secretFile := filepath.Join(v.vaultDir, v.makeHashedKey(key))
+
+	// check if the secret file exists
+	if _, err := os.Stat(secretFile); os.IsNotExist(err) {
+		return ErrKeyNotFound
+	}
+
+	// delete the secret file
+	err := os.Remove(secretFile)
+	if err != nil {
+		return ErrCannotDeleteSecretFile
+	}
+
+	return nil
 }
