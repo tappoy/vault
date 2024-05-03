@@ -18,7 +18,10 @@ $(WORKING_DIRS):
 $(FMT): $(SRC)
 	go fmt ./... > $(FMT) 2>&1 || true
 
-$(BIN): $(SRC) go.mod go.sum
+go.sum: go.mod
+	go mod tidy
+
+$(BIN): $(SRC) go.sum
 	go build -o $(BIN)
 
 $(TEST): $(BIN)
