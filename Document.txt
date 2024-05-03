@@ -56,6 +56,9 @@ var (
 
 FUNCTIONS
 
+func GeneratePassword() string
+    Generate a robust password.
+
 func IsInitialized(vaultDir string) bool
     Check if vault is already initialized.
 

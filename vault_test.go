@@ -232,3 +232,11 @@ func TestVaultDeleteValue(t *testing.T) {
 	}
 
 }
+
+func TestGeneratePassword(t *testing.T) {
+	// Just print 10 passwords.
+	for i := 0; i < 10; i++ {
+		password := GeneratePassword()
+		t.Logf("Password: %v", password)
+	}
+}

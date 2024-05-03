@@ -72,6 +72,11 @@ func createPasswordFile(vaultDir string, password string) error {
 	return ioutil.WriteFile(passwordFile, []byte(crypto.Hash(password)), 0440)
 }
 
+// Generate a robust password.
+func GeneratePassword() string {
+	return crypto.GenerateRandomString(32)
+}
+
 // Check password.
 func (v *Vault) checkPassword() error {
 	passwordFile := filepath.Join(v.vaultDir, ".password")
